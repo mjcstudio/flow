@@ -368,10 +368,108 @@
   }
   #signout-btn:hover { background: #fde8e8; }
 
+  /* ── SEARCH BAR ── */
+  #search-bar {
+    display: none;
+    position: fixed;
+    top: 56px;
+    right: 24px;
+    z-index: 200;
+    background: var(--paper);
+    border: 1px solid var(--toolbar-border);
+    border-radius: 10px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.14);
+    padding: 12px 14px;
+    min-width: 320px;
+    max-width: 420px;
+  }
+  #search-bar.open { display: block; }
+
+  #search-bar-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  #replace-row {
+    display: none;
+    align-items: center;
+    gap: 6px;
+    margin-top: 8px;
+  }
+  #replace-row.open { display: flex; }
+
+  .search-input {
+    flex: 1;
+    height: 30px;
+    border: 1px solid var(--toolbar-border);
+    border-radius: 5px;
+    padding: 0 8px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13px;
+    color: var(--ink);
+    outline: none;
+    background: var(--paper);
+    transition: border-color 0.12s;
+    min-width: 0;
+  }
+  .search-input:focus { border-color: var(--accent); }
+  .search-input.no-match { border-color: var(--red); background: #fff5f5; }
+
+  .sb-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 28px;
+    min-width: 28px;
+    padding: 0 8px;
+    border: 1px solid var(--toolbar-border);
+    border-radius: 5px;
+    background: var(--paper);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: all 0.12s;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+  .sb-btn:hover { background: var(--btn-hover); color: var(--ink); border-color: #bbb; }
+  .sb-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .sb-btn.primary:hover { background: var(--accent-hover); }
+  .sb-btn svg { width: 13px; height: 13px; fill: currentColor; }
+
+  #search-count {
+    font-size: 11px;
+    color: var(--ink-faint);
+    white-space: nowrap;
+    min-width: 48px;
+    text-align: center;
+  }
+  #search-count.no-match { color: var(--red); }
+
+  #toggle-replace-btn {
+    font-size: 11px;
+    color: var(--accent);
+    background: none;
+    border: none;
+    cursor: pointer;
+    padding: 4px 0 0;
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 500;
+    display: block;
+  }
+  #toggle-replace-btn:hover { text-decoration: underline; }
+
+  /* highlight colours */
+  .search-highlight { background: #fff176; border-radius: 2px; }
+  .search-highlight.current { background: #ffb300; border-radius: 2px; }
+
   @media (max-width: 700px) {
     #editor { padding: 32px 20px; }
     #editor-wrap { padding: 16px 8px; }
     .hdr-btn span { display: none; }
+    #search-bar { right: 8px; left: 8px; min-width: unset; }
   }
 </style>
 </head>
@@ -464,6 +562,10 @@
       <svg viewBox="0 0 16 16"><text x="1" y="5.5" font-size="5" font-weight="600">1.</text><rect x="6" y="3.25" width="9" height="1.5" rx="0.75"/><text x="1" y="9.5" font-size="5" font-weight="600">2.</text><rect x="6" y="7.25" width="9" height="1.5" rx="0.75"/><text x="1" y="13.5" font-size="5" font-weight="600">3.</text><rect x="6" y="11.25" width="9" height="1.5" rx="0.75"/></svg>
     </button>
     <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="openSearch()" title="Find (Ctrl+F)">
+      <svg viewBox="0 0 16 16"><path d="M11.742 10.344a6.5 6.5 0 1 0-1.397 1.398h-.001c.03.04.062.078.098.115l3.85 3.85a1 1 0 0 0 1.415-1.414l-3.85-3.85a1.007 1.007 0 0 0-.115-.099zm-5.242 1.156a5.5 5.5 0 1 1 0-11 5.5 5.5 0 0 1 0 11z"/></svg>
+    </button>
+    <div class="tb-sep"></div>
     <button class="tb-btn" onclick="document.execCommand('undo')" title="Undo (Ctrl+Z)">
       <svg viewBox="0 0 16 16"><path d="M3.5 6H9a4 4 0 0 1 0 8H5v-1.5h4a2.5 2.5 0 0 0 0-5H3.5l2-2-1.06-1.06L1 8l3.44 3.44L5.5 10.38 3.5 8.38V6z"/></svg>
     </button>
@@ -484,6 +586,29 @@
     <span id="stat-lines">1 line</span>
   </div>
 
+</div>
+
+<!-- SEARCH BAR -->
+<div id="search-bar">
+  <div id="search-bar-row">
+    <input id="search-input" class="search-input" type="text" placeholder="Find…" autocomplete="off" spellcheck="false">
+    <span id="search-count"></span>
+    <button class="sb-btn" onclick="searchPrev()" title="Previous">
+      <svg viewBox="0 0 16 16"><path d="M7.646 4.646a.5.5 0 0 1 .708 0l6 6a.5.5 0 0 1-.708.708L8 5.707l-5.646 5.647a.5.5 0 0 1-.708-.708l6-6z"/></svg>
+    </button>
+    <button class="sb-btn" onclick="searchNext()" title="Next">
+      <svg viewBox="0 0 16 16"><path d="M1.646 4.646a.5.5 0 0 1 .708 0L8 10.293l5.646-5.647a.5.5 0 0 1 .708.708l-6 6a.5.5 0 0 1-.708 0l-6-6a.5.5 0 0 1 0-.708z"/></svg>
+    </button>
+    <button class="sb-btn" onclick="closeSearch()" title="Close (Esc)">
+      <svg viewBox="0 0 16 16"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>
+    </button>
+  </div>
+  <button id="toggle-replace-btn" onclick="toggleReplace()">+ Replace</button>
+  <div id="replace-row">
+    <input id="replace-input" class="search-input" type="text" placeholder="Replace with…" autocomplete="off" spellcheck="false">
+    <button class="sb-btn" onclick="replaceOne()">Replace</button>
+    <button class="sb-btn primary" onclick="replaceAll()">All</button>
+  </div>
 </div>
 
 <!-- USER MENU -->
@@ -825,7 +950,147 @@ function updateToolbarState() {
   hs.value = ['h1','h2','h3'].includes(block) ? block : 'p';
 }
 
-// ── STATS ──
+// ── SEARCH & REPLACE ──
+let searchMatches = [];
+let searchIndex = -1;
+let replaceOpen = false;
+
+window.openSearch = () => {
+  document.getElementById('search-bar').classList.add('open');
+  const si = document.getElementById('search-input');
+  si.focus();
+  si.select();
+  if (si.value) doSearch(si.value);
+};
+
+window.closeSearch = () => {
+  document.getElementById('search-bar').classList.remove('open');
+  clearHighlights();
+  searchMatches = [];
+  searchIndex = -1;
+  editor.focus();
+};
+
+window.toggleReplace = () => {
+  replaceOpen = !replaceOpen;
+  const row = document.getElementById('replace-row');
+  const btn = document.getElementById('toggle-replace-btn');
+  row.classList.toggle('open', replaceOpen);
+  btn.textContent = replaceOpen ? '− Replace' : '+ Replace';
+  if (replaceOpen) document.getElementById('replace-input').focus();
+};
+
+document.getElementById('search-input').addEventListener('input', (e) => {
+  doSearch(e.target.value);
+});
+document.getElementById('search-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Enter') { e.shiftKey ? searchPrev() : searchNext(); }
+  if (e.key === 'Escape') closeSearch();
+});
+document.getElementById('replace-input').addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') closeSearch();
+});
+
+function doSearch(term) {
+  clearHighlights();
+  searchMatches = [];
+  searchIndex = -1;
+  const countEl = document.getElementById('search-count');
+  const si = document.getElementById('search-input');
+
+  if (!term) { countEl.textContent = ''; si.classList.remove('no-match'); return; }
+
+  // Walk text nodes and highlight
+  const regex = new RegExp(escapeRegex(term), 'gi');
+  const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
+  const nodesToProcess = [];
+  let node;
+  while ((node = walker.nextNode())) nodesToProcess.push(node);
+
+  nodesToProcess.forEach(textNode => {
+    const text = textNode.nodeValue;
+    if (!regex.test(text)) return;
+    regex.lastIndex = 0;
+    const frag = document.createDocumentFragment();
+    let last = 0, m;
+    while ((m = regex.exec(text)) !== null) {
+      if (m.index > last) frag.appendChild(document.createTextNode(text.slice(last, m.index)));
+      const mark = document.createElement('mark');
+      mark.className = 'search-highlight';
+      mark.textContent = m[0];
+      frag.appendChild(mark);
+      searchMatches.push(mark);
+      last = regex.lastIndex;
+    }
+    if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
+    textNode.parentNode.replaceChild(frag, textNode);
+  });
+
+  if (searchMatches.length === 0) {
+    countEl.textContent = 'No results';
+    countEl.className = 'no-match';
+    si.classList.add('no-match');
+  } else {
+    si.classList.remove('no-match');
+    searchIndex = 0;
+    activateMatch(0);
+  }
+}
+
+function activateMatch(idx) {
+  searchMatches.forEach(m => m.classList.remove('current'));
+  if (searchMatches.length === 0) return;
+  searchIndex = ((idx % searchMatches.length) + searchMatches.length) % searchMatches.length;
+  const m = searchMatches[searchIndex];
+  m.classList.add('current');
+  m.scrollIntoView({ block: 'center', behavior: 'smooth' });
+  document.getElementById('search-count').textContent = `${searchIndex + 1} / ${searchMatches.length}`;
+  document.getElementById('search-count').className = '';
+}
+
+window.searchNext = () => activateMatch(searchIndex + 1);
+window.searchPrev = () => activateMatch(searchIndex - 1);
+
+function clearHighlights() {
+  editor.querySelectorAll('mark.search-highlight').forEach(mark => {
+    const parent = mark.parentNode;
+    parent.replaceChild(document.createTextNode(mark.textContent), mark);
+    parent.normalize();
+  });
+}
+
+window.replaceOne = () => {
+  if (searchMatches.length === 0) return;
+  const replacement = document.getElementById('replace-input').value;
+  const current = searchMatches[searchIndex];
+  if (!current) return;
+  const text = document.createTextNode(replacement);
+  current.parentNode.replaceChild(text, current);
+  searchMatches.splice(searchIndex, 1);
+  triggerSave();
+  const term = document.getElementById('search-input').value;
+  doSearch(term);
+};
+
+window.replaceAll = () => {
+  if (searchMatches.length === 0) return;
+  const replacement = document.getElementById('replace-input').value;
+  [...searchMatches].forEach(m => {
+    m.parentNode.replaceChild(document.createTextNode(replacement), m);
+  });
+  searchMatches = [];
+  searchIndex = -1;
+  document.getElementById('search-count').textContent = 'Replaced';
+  document.getElementById('search-count').className = 'saved';
+  triggerSave();
+  setTimeout(() => doSearch(document.getElementById('search-input').value), 100);
+};
+
+function escapeRegex(str) {
+  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+
 function updateStats() {
   const text = editor.innerText || '';
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
@@ -845,6 +1110,8 @@ docTitle.addEventListener('input', triggerSave);
 
 document.addEventListener('keydown', (e) => {
   if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); doSave(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'f') { e.preventDefault(); openSearch(); }
+  if ((e.ctrlKey || e.metaKey) && e.key === 'h') { e.preventDefault(); openSearch(); setTimeout(() => { if (!replaceOpen) toggleReplace(); }, 50); }
 });
 
 </script>
