@@ -29,7 +29,58 @@
     --red: #c0392b;
   }
 
-  html, body { height: 100%; background: var(--cream); font-family: 'Source Sans 3', sans-serif; color: var(--ink); }
+  /* ── THEMES ── */
+  :root[data-theme="ocean"]    { --accent:#2c5f8a; --accent-light:#e8f0f7; --accent-hover:#1e4a6e; }
+  :root[data-theme="forest"]   { --accent:#2d6a4f; --accent-light:#e6f4ee; --accent-hover:#1e4d38; }
+  :root[data-theme="berry"]    { --accent:#7b3fa0; --accent-light:#f2e8f9; --accent-hover:#5c2d7a; }
+  :root[data-theme="rust"]     { --accent:#b84c1a; --accent-light:#faeee8; --accent-hover:#8f3912; }
+  :root[data-theme="slate"]    { --accent:#3d5166; --accent-light:#e8edf2; --accent-hover:#2b3a4a; }
+  :root[data-theme="rose"]     { --accent:#a0374a; --accent-light:#f9e8eb; --accent-hover:#7a2737; }
+  :root[data-theme="teal"]     { --accent:#1e7b7b; --accent-light:#e5f4f4; --accent-hover:#145959; }
+  :root[data-theme="gold"]     { --accent:#8a6914; --accent-light:#f7f1e0; --accent-hover:#6a4f0e; }
+  :root[data-theme="indigo"]   { --accent:#3d3d9e; --accent-light:#eaeaf7; --accent-hover:#2c2c7a; }
+  :root[data-theme="sage"]     { --accent:#5a7a5a; --accent-light:#eaf2ea; --accent-hover:#415941; }
+  :root[data-theme="crimson"]  { --accent:#9e2a2a; --accent-light:#f7e8e8; --accent-hover:#7a1e1e; }
+  :root[data-theme="copper"]   { --accent:#9e5a1a; --accent-light:#f7efe8; --accent-hover:#7a4212; }
+  :root[data-theme="plum"]     { --accent:#6b2d5e; --accent-light:#f4e8f2; --accent-hover:#4e1f45; }
+  :root[data-theme="midnight"] { --accent:#1a3a5c; --accent-light:#e4ecf5; --accent-hover:#102640; }
+  :root[data-theme="moss"]     { --accent:#4a6741; --accent-light:#ecf2eb; --accent-hover:#354a2f; }
+  :root[data-theme="stone"]    { --accent:#6b5e52; --accent-light:#f2efed; --accent-hover:#504539; }
+
+  /* ── DARK MODE ── */
+  :root[data-dark="1"] {
+    --cream: #1a1a1a;
+    --paper: #242424;
+    --ink: #e8e8e8;
+    --ink-light: #aaa;
+    --ink-faint: #666;
+    --rule: #333;
+    --rule-light: #2c2c2c;
+    --toolbar-bg: #1e1e1e;
+    --toolbar-border: #333;
+    --btn-hover: #2a2a2a;
+    --btn-active: #303030;
+    --shadow: 0 4px 24px rgba(0,0,0,0.4), 0 1px 4px rgba(0,0,0,0.2);
+    --shadow-toolbar: 0 2px 8px rgba(0,0,0,0.3);
+  }
+  :root[data-dark="1"][data-theme="ocean"]   { --accent:#5b9ec9; --accent-light:#1e3048; --accent-hover:#7ab3d4; }
+  :root[data-dark="1"][data-theme="forest"]  { --accent:#52b788; --accent-light:#1a3028; --accent-hover:#74c9a0; }
+  :root[data-dark="1"][data-theme="berry"]   { --accent:#c084e0; --accent-light:#2e1a40; --accent-hover:#d4a0ec; }
+  :root[data-dark="1"][data-theme="rust"]    { --accent:#e07848; --accent-light:#3a1e10; --accent-hover:#ec9468; }
+  :root[data-dark="1"][data-theme="slate"]   { --accent:#7ea8c8; --accent-light:#1e2a34; --accent-hover:#9abcda; }
+  :root[data-dark="1"][data-theme="rose"]    { --accent:#e07088; --accent-light:#3a1620; --accent-hover:#ec8fa4; }
+  :root[data-dark="1"][data-theme="teal"]    { --accent:#40bfbf; --accent-light:#0e2e2e; --accent-hover:#66cccc; }
+  :root[data-dark="1"][data-theme="gold"]    { --accent:#d4a830; --accent-light:#2e2208; --accent-hover:#e0be58; }
+  :root[data-dark="1"][data-theme="indigo"]  { --accent:#8080d4; --accent-light:#1a1a3a; --accent-hover:#a0a0e4; }
+  :root[data-dark="1"][data-theme="sage"]    { --accent:#8ab48a; --accent-light:#1a281a; --accent-hover:#a4c8a4; }
+  :root[data-dark="1"][data-theme="crimson"] { --accent:#d46060; --accent-light:#2e1010; --accent-hover:#e48080; }
+  :root[data-dark="1"][data-theme="copper"]  { --accent:#d49060; --accent-light:#2e1e08; --accent-hover:#e4a880; }
+  :root[data-dark="1"][data-theme="plum"]    { --accent:#c070b0; --accent-light:#280e22; --accent-hover:#d490c8; }
+  :root[data-dark="1"][data-theme="midnight"]{ --accent:#5a90c8; --accent-light:#0a1e30; --accent-hover:#7aaada; }
+  :root[data-dark="1"][data-theme="moss"]    { --accent:#80aa74; --accent-light:#182010; --accent-hover:#9ac090; }
+  :root[data-dark="1"][data-theme="stone"]   { --accent:#b0a090; --accent-light:#201a16; --accent-hover:#c8b8a8; }
+
+  html, body { height: 100%; background: var(--cream); font-family: 'Source Sans 3', sans-serif; color: var(--ink); transition: background 0.2s, color 0.2s; }
 
   /* ── SIGN IN SCREEN ── */
   #signin-screen {
@@ -368,6 +419,184 @@
   }
   #signout-btn:hover { background: #fde8e8; }
 
+  /* ── SETTINGS PANEL ── */
+  #settings-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.45);
+    z-index: 300;
+    align-items: center;
+    justify-content: center;
+  }
+  #settings-overlay.open { display: flex; }
+
+  #settings-panel {
+    background: var(--paper);
+    border-radius: 12px;
+    width: 90%;
+    max-width: 520px;
+    box-shadow: 0 24px 64px rgba(0,0,0,0.2);
+    overflow: hidden;
+  }
+
+  #settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid var(--rule);
+  }
+  #settings-header h2 {
+    font-family: 'Playfair Display', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--ink);
+  }
+  #settings-close {
+    width: 28px; height: 28px;
+    border: none; background: none; cursor: pointer;
+    color: var(--ink-faint); border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    transition: background 0.12s, color 0.12s;
+  }
+  #settings-close:hover { background: var(--btn-hover); color: var(--ink); }
+  #settings-close svg { width: 14px; height: 14px; fill: currentColor; }
+
+  #settings-body { padding: 20px 24px; }
+
+  .settings-section {
+    margin-bottom: 24px;
+  }
+  .settings-section:last-child { margin-bottom: 0; }
+
+  .settings-label {
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    color: var(--ink-faint);
+    margin-bottom: 12px;
+  }
+
+  /* Dark mode toggle */
+  .settings-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 10px 14px;
+    background: var(--toolbar-bg);
+    border-radius: 8px;
+    border: 1px solid var(--toolbar-border);
+  }
+  .settings-row-label { font-size: 14px; font-weight: 500; color: var(--ink); }
+  .settings-row-sub { font-size: 12px; color: var(--ink-faint); margin-top: 2px; }
+
+  .toggle {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    flex-shrink: 0;
+  }
+  .toggle input { opacity: 0; width: 0; height: 0; position: absolute; }
+  .toggle-track {
+    position: absolute;
+    inset: 0;
+    background: var(--toolbar-border);
+    border-radius: 11px;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+  .toggle input:checked + .toggle-track { background: var(--accent); }
+  .toggle-thumb {
+    position: absolute;
+    top: 3px; left: 3px;
+    width: 16px; height: 16px;
+    background: white;
+    border-radius: 50%;
+    transition: transform 0.2s;
+    pointer-events: none;
+  }
+  .toggle input:checked ~ .toggle-thumb { transform: translateX(18px); }
+
+  /* Colour swatches */
+  .colour-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+  }
+  .colour-swatch {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 6px 8px;
+    border: 2px solid transparent;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.12s;
+    background: var(--toolbar-bg);
+  }
+  .colour-swatch:hover { border-color: var(--toolbar-border); }
+  .colour-swatch.selected { border-color: var(--accent); background: var(--accent-light); }
+  .colour-swatch .dot {
+    width: 24px; height: 24px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .colour-swatch .name {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--ink-light);
+    text-align: center;
+  }
+
+  /* Version / account */
+  #settings-footer {
+    border-top: 1px solid var(--rule);
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #settings-version { font-size: 11px; color: var(--ink-faint); }
+  #settings-account {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    color: var(--ink-light);
+  }
+  #settings-account img, #settings-account-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid var(--rule);
+    flex-shrink: 0;
+  }
+  #settings-account-avatar {
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #settings-signout {
+    font-size: 12px;
+    color: var(--red);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 500;
+    padding: 4px 8px;
+    border-radius: 4px;
+    transition: background 0.1s;
+  }
+  #settings-signout:hover { background: #fde8e8; }
+
   /* ── SEARCH BAR ── */
   #search-bar {
     display: none;
@@ -513,6 +742,10 @@
         <svg viewBox="0 0 16 16"><path d="M8 1a.5.5 0 0 1 .5.5v7.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 .708-.708L7.5 9.293V1.5A.5.5 0 0 1 8 1zM2 13.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/></svg>
         <span>Export</span>
       </button>
+      <button class="hdr-btn" onclick="openSettings()">
+        <svg viewBox="0 0 16 16"><path d="M8 4.754a3.246 3.246 0 1 0 0 6.492 3.246 3.246 0 0 0 0-6.492zM5.754 8a2.246 2.246 0 1 1 4.492 0 2.246 2.246 0 0 1-4.492 0z"/><path d="M9.796 1.343c-.527-1.79-3.065-1.79-3.592 0l-.094.319a.873.873 0 0 1-1.255.52l-.292-.16c-1.64-.892-3.433.902-2.54 2.541l.159.292a.873.873 0 0 1-.52 1.255l-.319.094c-1.79.527-1.79 3.065 0 3.592l.319.094a.873.873 0 0 1 .52 1.255l-.16.292c-.892 1.64.901 3.434 2.541 2.54l.292-.159a.873.873 0 0 1 1.255.52l.094.319c.527 1.79 3.065 1.79 3.592 0l.094-.319a.873.873 0 0 1 1.255-.52l.292.16c1.64.893 3.434-.902 2.54-2.541l-.159-.292a.873.873 0 0 1 .52-1.255l.319-.094c1.79-.527 1.79-3.065 0-3.592l-.319-.094a.873.873 0 0 1-.52-1.255l.16-.292c.893-1.64-.902-3.433-2.541-2.54l-.292.159a.873.873 0 0 1-1.255-.52l-.094-.319zm-2.633.283c.246-.835 1.428-.835 1.674 0l.094.319a1.873 1.873 0 0 0 2.693 1.115l.291-.16c.764-.415 1.6.42 1.184 1.185l-.159.292a1.873 1.873 0 0 0 1.116 2.692l.318.094c.835.246.835 1.428 0 1.674l-.319.094a1.873 1.873 0 0 0-1.115 2.693l.16.291c.415.764-.42 1.6-1.185 1.184l-.291-.159a1.873 1.873 0 0 0-2.693 1.116l-.094.318c-.246.835-1.428.835-1.674 0l-.094-.319a1.873 1.873 0 0 0-2.692-1.115l-.292.16c-.764.415-1.6-.42-1.184-1.185l.159-.291A1.873 1.873 0 0 0 1.945 8.93l-.319-.094c-.835-.246-.835-1.428 0-1.674l.319-.094A1.873 1.873 0 0 0 3.06 4.474l-.16-.292c-.415-.764.42-1.6 1.185-1.184l.292.159a1.873 1.873 0 0 0 2.692-1.115l.094-.319z"/></svg>
+        <span>Settings</span>
+      </button>
       <div id="user-avatar-placeholder" onclick="toggleUserMenu()"></div>
     </div>
   </div>
@@ -586,6 +819,49 @@
     <span id="stat-lines">1 line</span>
   </div>
 
+</div>
+
+<!-- SETTINGS PANEL -->
+<div id="settings-overlay">
+  <div id="settings-panel">
+    <div id="settings-header">
+      <h2>Settings</h2>
+      <button id="settings-close" onclick="closeSettings()">
+        <svg viewBox="0 0 16 16"><path d="M4.646 4.646a.5.5 0 0 1 .708 0L8 7.293l2.646-2.647a.5.5 0 0 1 .708.708L8.707 8l2.647 2.646a.5.5 0 0 1-.708.708L8 8.707l-2.646 2.647a.5.5 0 0 1-.708-.708L7.293 8 4.646 5.354a.5.5 0 0 1 0-.708z"/></svg>
+      </button>
+    </div>
+    <div id="settings-body">
+
+      <div class="settings-section">
+        <div class="settings-label">Appearance</div>
+        <div class="settings-row">
+          <div>
+            <div class="settings-row-label">Dark mode</div>
+            <div class="settings-row-sub">Darkens the editor and all chrome</div>
+          </div>
+          <label class="toggle">
+            <input type="checkbox" id="dark-mode-toggle" onchange="toggleDarkMode(this.checked)">
+            <div class="toggle-track"></div>
+            <div class="toggle-thumb"></div>
+          </label>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-label">Colour scheme</div>
+        <div class="colour-grid" id="colour-grid"></div>
+      </div>
+
+    </div>
+    <div id="settings-footer">
+      <div id="settings-version">Flow · Version 1.1.0</div>
+      <div id="settings-account">
+        <div id="settings-account-avatar"></div>
+        <span id="settings-account-name"></span>
+        <button id="settings-signout" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+  </div>
 </div>
 
 <!-- SEARCH BAR -->
@@ -949,6 +1225,92 @@ function updateToolbarState() {
   const hs = document.getElementById('heading-select');
   hs.value = ['h1','h2','h3'].includes(block) ? block : 'p';
 }
+
+// ── SETTINGS ──
+const THEMES = [
+  { id: 'ocean',    name: 'Ocean',    light: '#2c5f8a', dark: '#5b9ec9' },
+  { id: 'forest',   name: 'Forest',   light: '#2d6a4f', dark: '#52b788' },
+  { id: 'berry',    name: 'Berry',    light: '#7b3fa0', dark: '#c084e0' },
+  { id: 'rust',     name: 'Rust',     light: '#b84c1a', dark: '#e07848' },
+  { id: 'slate',    name: 'Slate',    light: '#3d5166', dark: '#7ea8c8' },
+  { id: 'rose',     name: 'Rose',     light: '#a0374a', dark: '#e07088' },
+  { id: 'teal',     name: 'Teal',     light: '#1e7b7b', dark: '#40bfbf' },
+  { id: 'gold',     name: 'Gold',     light: '#8a6914', dark: '#d4a830' },
+  { id: 'indigo',   name: 'Indigo',   light: '#3d3d9e', dark: '#8080d4' },
+  { id: 'sage',     name: 'Sage',     light: '#5a7a5a', dark: '#8ab48a' },
+  { id: 'crimson',  name: 'Crimson',  light: '#9e2a2a', dark: '#d46060' },
+  { id: 'copper',   name: 'Copper',   light: '#9e5a1a', dark: '#d49060' },
+  { id: 'plum',     name: 'Plum',     light: '#6b2d5e', dark: '#c070b0' },
+  { id: 'midnight', name: 'Midnight', light: '#1a3a5c', dark: '#5a90c8' },
+  { id: 'moss',     name: 'Moss',     light: '#4a6741', dark: '#80aa74' },
+  { id: 'stone',    name: 'Stone',    light: '#6b5e52', dark: '#b0a090' },
+];
+
+let currentTheme = 'ocean';
+let darkMode = false;
+
+function buildColourGrid() {
+  const grid = document.getElementById('colour-grid');
+  grid.innerHTML = '';
+  THEMES.forEach(t => {
+    const sw = document.createElement('div');
+    sw.className = 'colour-swatch' + (t.id === currentTheme ? ' selected' : '');
+    sw.dataset.theme = t.id;
+    sw.innerHTML = `<div class="dot" style="background:${darkMode ? t.dark : t.light}"></div><div class="name">${t.name}</div>`;
+    sw.addEventListener('click', () => applyTheme(t.id));
+    grid.appendChild(sw);
+  });
+}
+
+function applyTheme(themeId) {
+  currentTheme = themeId;
+  document.documentElement.setAttribute('data-theme', themeId);
+  localStorage.setItem('flow_theme', themeId);
+  buildColourGrid();
+}
+
+function toggleDarkMode(on) {
+  darkMode = on;
+  document.documentElement.setAttribute('data-dark', on ? '1' : '0');
+  localStorage.setItem('flow_dark', on ? '1' : '0');
+  buildColourGrid();
+}
+
+window.openSettings = () => {
+  document.getElementById('dark-mode-toggle').checked = darkMode;
+  buildColourGrid();
+  // Populate account info
+  if (currentUser) {
+    document.getElementById('settings-account-name').textContent = currentUser.displayName || currentUser.email || '';
+    const av = document.getElementById('settings-account-avatar');
+    if (currentUser.photoURL) {
+      av.innerHTML = `<img src="${currentUser.photoURL}" style="width:28px;height:28px;border-radius:50%;object-fit:cover;border:1px solid var(--rule);">`;
+    } else {
+      av.textContent = (currentUser.displayName || currentUser.email || 'U')[0].toUpperCase();
+      av.style.display = 'flex';
+    }
+  }
+  document.getElementById('settings-overlay').classList.add('open');
+};
+
+window.closeSettings = () => {
+  document.getElementById('settings-overlay').classList.remove('open');
+};
+
+document.getElementById('settings-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('settings-overlay')) closeSettings();
+});
+
+function loadPreferences() {
+  const theme = localStorage.getItem('flow_theme') || 'ocean';
+  const dark = localStorage.getItem('flow_dark') === '1';
+  currentTheme = theme;
+  darkMode = dark;
+  document.documentElement.setAttribute('data-theme', theme);
+  document.documentElement.setAttribute('data-dark', dark ? '1' : '0');
+}
+
+loadPreferences();
 
 // ── SEARCH & REPLACE ──
 let searchMatches = [];
