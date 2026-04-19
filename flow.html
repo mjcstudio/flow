@@ -1,0 +1,852 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Flow</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500;600&family=Source+Sans+3:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --cream: #faf8f4;
+    --paper: #ffffff;
+    --ink: #1a1a1a;
+    --ink-light: #555;
+    --ink-faint: #999;
+    --rule: #e5e0d8;
+    --rule-light: #f0ece5;
+    --accent: #2c5f8a;
+    --accent-light: #e8f0f7;
+    --accent-hover: #1e4a6e;
+    --toolbar-bg: #f5f2ee;
+    --toolbar-border: #ddd8d0;
+    --btn-hover: #ebe6df;
+    --btn-active: #ddd6cc;
+    --shadow: 0 4px 24px rgba(0,0,0,0.08), 0 1px 4px rgba(0,0,0,0.04);
+    --shadow-toolbar: 0 2px 8px rgba(0,0,0,0.06);
+    --green: #4a9e6a;
+    --red: #c0392b;
+  }
+
+  html, body { height: 100%; background: var(--cream); font-family: 'Source Sans 3', sans-serif; color: var(--ink); }
+
+  /* ── SIGN IN SCREEN ── */
+  #signin-screen {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: var(--cream);
+  }
+  #signin-card {
+    background: var(--paper);
+    border-radius: 12px;
+    padding: 48px 56px;
+    box-shadow: var(--shadow);
+    text-align: center;
+    max-width: 380px;
+    width: 90%;
+  }
+  #signin-card .logo {
+    font-family: 'Playfair Display', serif;
+    font-size: 42px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -1px;
+    margin-bottom: 8px;
+  }
+  #signin-card .tagline {
+    font-size: 14px;
+    color: var(--ink-faint);
+    margin-bottom: 36px;
+    font-weight: 300;
+  }
+  #google-signin-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 12px 20px;
+    border: 1px solid var(--toolbar-border);
+    border-radius: 8px;
+    background: var(--paper);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+  #google-signin-btn:hover { background: var(--btn-hover); border-color: #bbb; }
+  #google-signin-btn svg { width: 18px; height: 18px; flex-shrink: 0; }
+
+  /* ── APP ── */
+  #app { display: none; flex-direction: column; height: 100vh; overflow: hidden; }
+  #app.visible { display: flex; }
+
+  /* ── HEADER ── */
+  #header {
+    background: var(--paper);
+    border-bottom: 1px solid var(--toolbar-border);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    height: 48px;
+    flex-shrink: 0;
+    box-shadow: var(--shadow-toolbar);
+    z-index: 10;
+  }
+  #app-name {
+    font-family: 'Playfair Display', serif;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--ink);
+    letter-spacing: -0.3px;
+    flex-shrink: 0;
+  }
+  #doc-title {
+    flex: 1;
+    border: none;
+    background: transparent;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 14px;
+    font-weight: 500;
+    color: var(--ink);
+    outline: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    min-width: 0;
+    transition: background 0.15s;
+  }
+  #doc-title:hover { background: var(--rule-light); }
+  #doc-title:focus { background: var(--accent-light); }
+  #doc-title::placeholder { color: var(--ink-faint); font-weight: 400; }
+
+  #header-actions { display: flex; align-items: center; gap: 6px; flex-shrink: 0; }
+
+  .hdr-btn {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 10px;
+    border: 1px solid var(--toolbar-border);
+    border-radius: 6px;
+    background: var(--paper);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink-light);
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+  }
+  .hdr-btn:hover { background: var(--btn-hover); color: var(--ink); border-color: #bbb; }
+  .hdr-btn.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  .hdr-btn.primary:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+  .hdr-btn svg { width: 13px; height: 13px; fill: currentColor; flex-shrink: 0; }
+
+  #save-status { font-size: 11px; color: var(--ink-faint); font-weight: 400; white-space: nowrap; }
+  #save-status.saved { color: var(--green); }
+  #save-status.error { color: var(--red); }
+
+  #user-avatar {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: 1px solid var(--rule);
+    cursor: pointer;
+    object-fit: cover;
+    flex-shrink: 0;
+  }
+  #user-avatar-placeholder {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    background: var(--accent);
+    color: white;
+    font-size: 12px;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    flex-shrink: 0;
+  }
+
+  /* ── TOOLBAR ── */
+  #toolbar {
+    background: var(--toolbar-bg);
+    border-bottom: 1px solid var(--toolbar-border);
+    padding: 4px 12px;
+    display: flex;
+    align-items: center;
+    gap: 2px;
+    flex-wrap: wrap;
+    flex-shrink: 0;
+  }
+  .tb-sep { width: 1px; height: 22px; background: var(--toolbar-border); margin: 0 3px; flex-shrink: 0; }
+  .tb-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 28px;
+    border: 1px solid transparent;
+    border-radius: 4px;
+    background: transparent;
+    cursor: pointer;
+    color: var(--ink-light);
+    font-size: 13px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-weight: 500;
+    transition: all 0.12s;
+    flex-shrink: 0;
+  }
+  .tb-btn:hover { background: var(--btn-hover); border-color: var(--toolbar-border); color: var(--ink); }
+  .tb-btn.active { background: var(--accent-light); border-color: #b8d0e8; color: var(--accent); }
+  .tb-btn svg { width: 15px; height: 15px; fill: currentColor; pointer-events: none; }
+  .tb-btn-bold { font-weight: 700; font-size: 14px; }
+  .tb-btn-italic { font-style: italic; font-size: 14px; }
+  .tb-btn-underline { text-decoration: underline; font-size: 14px; }
+  .tb-select {
+    height: 28px;
+    border: 1px solid var(--toolbar-border);
+    border-radius: 4px;
+    background: var(--paper);
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--ink);
+    padding: 0 6px;
+    cursor: pointer;
+    outline: none;
+    transition: border-color 0.12s;
+  }
+  .tb-select:hover, .tb-select:focus { border-color: #aaa; }
+  #font-size-select { width: 54px; }
+  #heading-select { width: 110px; }
+
+  /* ── EDITOR ── */
+  #editor-wrap { flex: 1; overflow-y: auto; padding: 40px 20px; background: var(--cream); }
+  #editor {
+    width: 100%;
+    max-width: 800px;
+    min-height: calc(100vh - 200px);
+    margin: 0 auto;
+    background: var(--paper);
+    box-shadow: var(--shadow);
+    border-radius: 4px;
+    padding: 60px 72px;
+    outline: none;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 16px;
+    line-height: 1.75;
+    color: var(--ink);
+    caret-color: var(--accent);
+  }
+  #editor:empty::before { content: attr(data-placeholder); color: var(--ink-faint); pointer-events: none; }
+  #editor h1 { font-family: 'Playfair Display', serif; font-size: 32px; font-weight: 600; line-height: 1.3; margin: 24px 0 12px; }
+  #editor h2 { font-family: 'Playfair Display', serif; font-size: 24px; font-weight: 500; line-height: 1.35; margin: 20px 0 10px; }
+  #editor h3 { font-family: 'Source Sans 3', sans-serif; font-size: 18px; font-weight: 600; line-height: 1.4; margin: 16px 0 8px; }
+  #editor p { margin: 0 0 12px; }
+  #editor ul, #editor ol { margin: 0 0 12px; padding-left: 28px; }
+  #editor li { margin-bottom: 4px; }
+  #editor b, #editor strong { font-weight: 600; }
+
+  /* ── STATUS BAR ── */
+  #statusbar {
+    background: var(--toolbar-bg);
+    border-top: 1px solid var(--toolbar-border);
+    padding: 4px 24px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    font-size: 12px;
+    color: var(--ink-faint);
+    flex-shrink: 0;
+  }
+
+  /* ── MODAL ── */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.4);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+  #modal {
+    background: var(--paper);
+    border-radius: 10px;
+    padding: 28px 32px;
+    max-width: 460px;
+    width: 90%;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.2);
+  }
+  #modal h2 { font-family: 'Playfair Display', serif; font-size: 20px; margin-bottom: 16px; }
+  #modal p { font-size: 14px; color: var(--ink-light); line-height: 1.6; margin-bottom: 20px; }
+  #modal-actions { display: flex; gap: 10px; justify-content: flex-end; }
+  #modal-actions button {
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--toolbar-border);
+    background: var(--paper);
+    color: var(--ink);
+    transition: all 0.15s;
+  }
+  #modal-actions button:hover { background: var(--btn-hover); }
+  #modal-actions button.primary { background: var(--accent); color: white; border-color: var(--accent); }
+  #modal-actions button.primary:hover { background: var(--accent-hover); }
+  #modal-actions button.danger { background: var(--red); color: white; border-color: var(--red); }
+
+  #doc-list { max-height: 260px; overflow-y: auto; border: 1px solid var(--rule); border-radius: 6px; margin-bottom: 16px; }
+  .doc-item {
+    padding: 10px 14px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    border-bottom: 1px solid var(--rule-light);
+    cursor: pointer;
+    font-size: 13px;
+    transition: background 0.1s;
+  }
+  .doc-item:last-child { border-bottom: none; }
+  .doc-item:hover { background: var(--accent-light); }
+  .doc-item.current { background: var(--accent-light); }
+  .doc-item .doc-name { font-weight: 500; color: var(--ink); }
+  .doc-item .doc-date { color: var(--ink-faint); font-size: 11px; margin-top: 2px; }
+  .doc-item .doc-del {
+    color: var(--red);
+    font-size: 11px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    font-family: 'Source Sans 3', sans-serif;
+    flex-shrink: 0;
+  }
+  .doc-item .doc-del:hover { background: #fde8e8; border-color: #f5c6c6; }
+
+  #user-menu {
+    display: none;
+    position: fixed;
+    top: 52px;
+    right: 16px;
+    background: var(--paper);
+    border: 1px solid var(--toolbar-border);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(0,0,0,0.12);
+    z-index: 50;
+    min-width: 180px;
+    overflow: hidden;
+  }
+  #user-menu.open { display: block; }
+  #user-menu-name { padding: 12px 16px 8px; font-size: 13px; font-weight: 500; color: var(--ink); border-bottom: 1px solid var(--rule-light); }
+  #user-menu-email { padding: 0 16px 10px; font-size: 11px; color: var(--ink-faint); border-bottom: 1px solid var(--rule-light); }
+  #signout-btn {
+    display: block;
+    width: 100%;
+    padding: 10px 16px;
+    text-align: left;
+    border: none;
+    background: transparent;
+    font-family: 'Source Sans 3', sans-serif;
+    font-size: 13px;
+    color: var(--red);
+    cursor: pointer;
+    transition: background 0.1s;
+  }
+  #signout-btn:hover { background: #fde8e8; }
+
+  @media (max-width: 700px) {
+    #editor { padding: 32px 20px; }
+    #editor-wrap { padding: 16px 8px; }
+    .hdr-btn span { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<!-- SIGN IN -->
+<div id="signin-screen">
+  <div id="signin-card">
+    <div class="logo">Flow</div>
+    <div class="tagline">Your writing, everywhere</div>
+    <button id="google-signin-btn">
+      <svg viewBox="0 0 18 18" xmlns="http://www.w3.org/2000/svg">
+        <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z"/>
+        <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+        <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
+        <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+      </svg>
+      Sign in with Google
+    </button>
+  </div>
+</div>
+
+<!-- APP -->
+<div id="app">
+
+  <!-- HEADER -->
+  <div id="header">
+    <div id="app-name">Flow</div>
+    <input id="doc-title" type="text" placeholder="Untitled document" maxlength="80" spellcheck="false">
+    <div id="header-actions">
+      <span id="save-status"></span>
+      <button class="hdr-btn" onclick="openDocManager()">
+        <svg viewBox="0 0 16 16"><path d="M2 2h8l3 3v9H2V2zm2 1v10h8V5.5L9.5 4H7V2H4zm4-1v2h2.5L8 1z"/></svg>
+        <span>Documents</span>
+      </button>
+      <button class="hdr-btn" onclick="newDocument()">
+        <svg viewBox="0 0 16 16"><path d="M8 1a7 7 0 1 1 0 14A7 7 0 0 1 8 1zm0 1a6 6 0 1 0 0 12A6 6 0 0 0 8 2zm0 3a.5.5 0 0 1 .5.5V7.5h2a.5.5 0 0 1 0 1h-2v2a.5.5 0 0 1-1 0v-2h-2a.5.5 0 0 1 0-1h2V5.5A.5.5 0 0 1 8 5z"/></svg>
+        <span>New</span>
+      </button>
+      <button class="hdr-btn primary" onclick="exportDoc()">
+        <svg viewBox="0 0 16 16"><path d="M8 1a.5.5 0 0 1 .5.5v7.793l2.146-2.147a.5.5 0 0 1 .708.708l-3 3a.5.5 0 0 1-.708 0l-3-3a.5.5 0 0 1 .708-.708L7.5 9.293V1.5A.5.5 0 0 1 8 1zM2 13.5a.5.5 0 0 1 .5-.5h11a.5.5 0 0 1 0 1h-11a.5.5 0 0 1-.5-.5z"/></svg>
+        <span>Export</span>
+      </button>
+      <div id="user-avatar-placeholder" onclick="toggleUserMenu()"></div>
+    </div>
+  </div>
+
+  <!-- TOOLBAR -->
+  <div id="toolbar">
+    <select id="heading-select" class="tb-select" onchange="applyHeading(this.value)">
+      <option value="p">Paragraph</option>
+      <option value="h1">Heading 1</option>
+      <option value="h2">Heading 2</option>
+      <option value="h3">Heading 3</option>
+    </select>
+    <select id="font-size-select" class="tb-select" onchange="applyFontSize(this.value)" title="Font size">
+      <option value="12">12</option>
+      <option value="14">14</option>
+      <option value="16" selected>16</option>
+      <option value="18">18</option>
+      <option value="20">20</option>
+      <option value="24">24</option>
+      <option value="28">28</option>
+      <option value="32">32</option>
+      <option value="36">36</option>
+      <option value="48">48</option>
+    </select>
+    <div class="tb-sep"></div>
+    <button class="tb-btn tb-btn-bold" id="btn-bold" onclick="fmt('bold')" title="Bold (Ctrl+B)">B</button>
+    <button class="tb-btn tb-btn-italic" id="btn-italic" onclick="fmt('italic')" title="Italic (Ctrl+I)">I</button>
+    <button class="tb-btn tb-btn-underline" id="btn-underline" onclick="fmt('underline')" title="Underline (Ctrl+U)">U</button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="btn-left" onclick="fmt('justifyLeft')" title="Align left">
+      <svg viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="1.5" rx="0.75"/><rect x="1" y="6.5" width="10" height="1.5" rx="0.75"/><rect x="1" y="10" width="14" height="1.5" rx="0.75"/><rect x="1" y="13.5" width="8" height="1.5" rx="0.75"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-center" onclick="fmt('justifyCenter')" title="Align centre">
+      <svg viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="1.5" rx="0.75"/><rect x="3" y="6.5" width="10" height="1.5" rx="0.75"/><rect x="1" y="10" width="14" height="1.5" rx="0.75"/><rect x="4" y="13.5" width="8" height="1.5" rx="0.75"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-right" onclick="fmt('justifyRight')" title="Align right">
+      <svg viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="1.5" rx="0.75"/><rect x="5" y="6.5" width="10" height="1.5" rx="0.75"/><rect x="1" y="10" width="14" height="1.5" rx="0.75"/><rect x="7" y="13.5" width="8" height="1.5" rx="0.75"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-justify" onclick="fmt('justifyFull')" title="Justify">
+      <svg viewBox="0 0 16 16"><rect x="1" y="3" width="14" height="1.5" rx="0.75"/><rect x="1" y="6.5" width="14" height="1.5" rx="0.75"/><rect x="1" y="10" width="14" height="1.5" rx="0.75"/><rect x="1" y="13.5" width="14" height="1.5" rx="0.75"/></svg>
+    </button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" id="btn-ul" onclick="fmt('insertUnorderedList')" title="Bullet list">
+      <svg viewBox="0 0 16 16"><circle cx="2.5" cy="4" r="1.2"/><rect x="5" y="3.25" width="10" height="1.5" rx="0.75"/><circle cx="2.5" cy="8" r="1.2"/><rect x="5" y="7.25" width="10" height="1.5" rx="0.75"/><circle cx="2.5" cy="12" r="1.2"/><rect x="5" y="11.25" width="10" height="1.5" rx="0.75"/></svg>
+    </button>
+    <button class="tb-btn" id="btn-ol" onclick="fmt('insertOrderedList')" title="Numbered list">
+      <svg viewBox="0 0 16 16"><text x="1" y="5.5" font-size="5" font-weight="600">1.</text><rect x="6" y="3.25" width="9" height="1.5" rx="0.75"/><text x="1" y="9.5" font-size="5" font-weight="600">2.</text><rect x="6" y="7.25" width="9" height="1.5" rx="0.75"/><text x="1" y="13.5" font-size="5" font-weight="600">3.</text><rect x="6" y="11.25" width="9" height="1.5" rx="0.75"/></svg>
+    </button>
+    <div class="tb-sep"></div>
+    <button class="tb-btn" onclick="document.execCommand('undo')" title="Undo (Ctrl+Z)">
+      <svg viewBox="0 0 16 16"><path d="M3.5 6H9a4 4 0 0 1 0 8H5v-1.5h4a2.5 2.5 0 0 0 0-5H3.5l2-2-1.06-1.06L1 8l3.44 3.44L5.5 10.38 3.5 8.38V6z"/></svg>
+    </button>
+    <button class="tb-btn" onclick="document.execCommand('redo')" title="Redo (Ctrl+Y)">
+      <svg viewBox="0 0 16 16"><path d="M12.5 6H7a4 4 0 0 0 0 8h4v-1.5H7a2.5 2.5 0 0 1 0-5h5.5l-2 2 1.06 1.06L15 8l-3.44-3.44-1.06 1.06L12.5 6z"/></svg>
+    </button>
+  </div>
+
+  <!-- EDITOR -->
+  <div id="editor-wrap">
+    <div id="editor" contenteditable="true" spellcheck="true" data-placeholder="Start writing…"></div>
+  </div>
+
+  <!-- STATUS BAR -->
+  <div id="statusbar">
+    <span id="stat-words">0 words</span>
+    <span id="stat-chars">0 characters</span>
+    <span id="stat-lines">1 line</span>
+  </div>
+
+</div>
+
+<!-- USER MENU -->
+<div id="user-menu">
+  <div id="user-menu-name"></div>
+  <div id="user-menu-email"></div>
+  <button id="signout-btn" onclick="signOut()">Sign out</button>
+</div>
+
+<!-- MODAL -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2 id="modal-title"></h2>
+    <div id="modal-body"></div>
+    <div id="modal-actions"></div>
+  </div>
+</div>
+
+<!-- FIREBASE -->
+<script type="module">
+import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
+import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy, serverTimestamp }
+  from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
+
+const firebaseConfig = {
+  apiKey: "AIzaSyCCxusGRYOLFe5yBX0oCOW1BtplmQgBQGs",
+  authDomain: "flow-app-1b959.firebaseapp.com",
+  projectId: "flow-app-1b959",
+  storageBucket: "flow-app-1b959.firebasestorage.app",
+  messagingSenderId: "556781111119",
+  appId: "1:556781111119:web:bac0e9b61b7d6e12c9273a"
+};
+
+const firebaseApp = initializeApp(firebaseConfig);
+const auth = getAuth(firebaseApp);
+const db = getFirestore(firebaseApp);
+
+const editor = document.getElementById('editor');
+const docTitle = document.getElementById('doc-title');
+const saveStatus = document.getElementById('save-status');
+const statWords = document.getElementById('stat-words');
+const statChars = document.getElementById('stat-chars');
+const statLines = document.getElementById('stat-lines');
+
+let currentUser = null;
+let currentDocId = null;
+let saveTimer = null;
+let lastSavedContent = '';
+let lastSavedTitle = '';
+
+// ── AUTH ──
+document.getElementById('google-signin-btn').addEventListener('click', async () => {
+  const provider = new GoogleAuthProvider();
+  try { await signInWithPopup(auth, provider); }
+  catch (e) { console.error(e); }
+});
+
+window.signOut = async () => {
+  await fbSignOut(auth);
+  document.getElementById('user-menu').classList.remove('open');
+};
+
+onAuthStateChanged(auth, async (user) => {
+  if (user) {
+    currentUser = user;
+    document.getElementById('signin-screen').style.display = 'none';
+    document.getElementById('app').classList.add('visible');
+    setupUserAvatar(user);
+    await loadMostRecentDoc();
+  } else {
+    currentUser = null;
+    document.getElementById('signin-screen').style.display = 'flex';
+    document.getElementById('app').classList.remove('visible');
+    editor.innerHTML = '';
+    docTitle.value = '';
+    currentDocId = null;
+  }
+});
+
+function setupUserAvatar(user) {
+  const placeholder = document.getElementById('user-avatar-placeholder');
+  document.getElementById('user-menu-name').textContent = user.displayName || 'User';
+  document.getElementById('user-menu-email').textContent = user.email || '';
+  if (user.photoURL) {
+    placeholder.innerHTML = `<img id="user-avatar" src="${user.photoURL}" onclick="toggleUserMenu()" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);cursor:pointer;object-fit:cover;">`;
+  } else {
+    placeholder.textContent = (user.displayName || user.email || 'U')[0].toUpperCase();
+  }
+}
+
+window.toggleUserMenu = () => {
+  document.getElementById('user-menu').classList.toggle('open');
+};
+document.addEventListener('click', (e) => {
+  const menu = document.getElementById('user-menu');
+  const avatar = document.getElementById('user-avatar-placeholder');
+  if (!menu.contains(e.target) && !avatar.contains(e.target)) menu.classList.remove('open');
+});
+
+// ── FIRESTORE HELPERS ──
+function docsRef() {
+  return collection(db, 'users', currentUser.uid, 'documents');
+}
+
+async function saveDocToFirestore(id, title, content) {
+  setSaveStatus('Saving…', 'saving');
+  try {
+    await setDoc(doc(docsRef(), id), {
+      title: title || 'Untitled',
+      content,
+      updatedAt: serverTimestamp()
+    });
+    lastSavedContent = content;
+    lastSavedTitle = title;
+    setSaveStatus('All changes saved', 'saved');
+  } catch (e) {
+    setSaveStatus('Save failed', 'error');
+    console.error(e);
+  }
+}
+
+async function loadMostRecentDoc() {
+  try {
+    const q = query(docsRef(), orderBy('updatedAt', 'desc'));
+    const snap = await getDocs(q);
+    if (!snap.empty) {
+      const d = snap.docs[0];
+      loadDocData(d.id, d.data());
+    } else {
+      currentDocId = genId();
+      setSaveStatus('New document', '');
+    }
+  } catch (e) {
+    currentDocId = genId();
+    setSaveStatus('New document', '');
+  }
+}
+
+function loadDocData(id, data) {
+  currentDocId = id;
+  docTitle.value = data.title || '';
+  editor.innerHTML = data.content || '';
+  lastSavedContent = data.content || '';
+  lastSavedTitle = data.title || '';
+  setSaveStatus('All changes saved', 'saved');
+  updateStats();
+}
+
+// ── SAVE ──
+function triggerSave() {
+  clearTimeout(saveTimer);
+  setSaveStatus('Unsaved changes', '');
+  saveTimer = setTimeout(doSave, 1200);
+}
+
+async function doSave() {
+  if (!currentUser) return;
+  if (!currentDocId) currentDocId = genId();
+  const title = docTitle.value.trim() || 'Untitled';
+  const content = editor.innerHTML;
+  await saveDocToFirestore(currentDocId, title, content);
+}
+
+function setSaveStatus(msg, state) {
+  saveStatus.textContent = msg;
+  saveStatus.className = state;
+}
+
+function genId() { return 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
+
+// ── NEW DOCUMENT ──
+window.newDocument = async () => {
+  await doSave();
+  currentDocId = genId();
+  docTitle.value = '';
+  editor.innerHTML = '';
+  lastSavedContent = '';
+  lastSavedTitle = '';
+  setSaveStatus('New document', '');
+  editor.focus();
+};
+
+// ── DOC MANAGER ──
+window.openDocManager = async () => {
+  document.getElementById('modal-title').textContent = 'Your documents';
+  document.getElementById('modal-body').innerHTML = '<p style="color:var(--ink-faint);font-size:13px">Loading…</p>';
+  document.getElementById('modal-actions').innerHTML = `<button onclick="closeModal()">Close</button>`;
+  document.getElementById('modal-overlay').classList.add('open');
+
+  try {
+    const q = query(docsRef(), orderBy('updatedAt', 'desc'));
+    const snap = await getDocs(q);
+    const body = document.getElementById('modal-body');
+
+    if (snap.empty) {
+      body.innerHTML = '<p>No saved documents yet.</p>';
+      return;
+    }
+
+    const dl = document.createElement('div');
+    dl.id = 'doc-list';
+    snap.docs.forEach(d => {
+      const data = d.data();
+      const item = document.createElement('div');
+      item.className = 'doc-item' + (d.id === currentDocId ? ' current' : '');
+      const ts = data.updatedAt?.toDate?.();
+      const dateStr = ts ? ts.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
+      item.innerHTML = `
+        <div>
+          <div class="doc-name">${data.title || 'Untitled'}</div>
+          <div class="doc-date">${dateStr}</div>
+        </div>
+        <button class="doc-del" data-id="${d.id}">Delete</button>`;
+      item.querySelector('.doc-del').addEventListener('click', (e) => {
+        e.stopPropagation();
+        confirmDelete(d.id, data.title || 'Untitled');
+      });
+      item.addEventListener('click', async () => {
+        await doSave();
+        loadDocData(d.id, data);
+        closeModal();
+      });
+      dl.appendChild(item);
+    });
+    body.innerHTML = '';
+    body.appendChild(dl);
+  } catch (e) {
+    document.getElementById('modal-body').innerHTML = '<p>Could not load documents.</p>';
+  }
+};
+
+function confirmDelete(id, title) {
+  showModal(
+    'Delete document?',
+    `"${title}" will be permanently deleted.`,
+    [
+      { label: 'Cancel', action: closeModal },
+      { label: 'Delete', cls: 'danger', action: async () => {
+        await deleteDoc(doc(docsRef(), id));
+        if (currentDocId === id) {
+          currentDocId = genId();
+          editor.innerHTML = '';
+          docTitle.value = '';
+          lastSavedContent = '';
+          setSaveStatus('New document', '');
+        }
+        closeModal();
+      }}
+    ]
+  );
+}
+
+function showModal(title, body, buttons) {
+  document.getElementById('modal-title').textContent = title;
+  document.getElementById('modal-body').innerHTML = `<p>${body}</p>`;
+  const acts = document.getElementById('modal-actions');
+  acts.innerHTML = '';
+  buttons.forEach(b => {
+    const btn = document.createElement('button');
+    btn.textContent = b.label;
+    if (b.cls) btn.className = b.cls;
+    btn.onclick = b.action;
+    acts.appendChild(btn);
+  });
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
+window.closeModal = () => document.getElementById('modal-overlay').classList.remove('open');
+document.getElementById('modal-overlay').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('modal-overlay')) closeModal();
+});
+
+// ── EXPORT ──
+window.exportDoc = async () => {
+  await doSave();
+  const title = docTitle.value.trim() || 'Untitled';
+  const content = editor.innerHTML;
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>${title}</title>
+<style>
+body{font-family:Georgia,serif;font-size:16px;line-height:1.75;max-width:800px;margin:60px auto;padding:0 40px;color:#1a1a1a}
+h1{font-size:32px;margin:24px 0 12px}h2{font-size:24px;margin:20px 0 10px}h3{font-size:18px;margin:16px 0 8px}
+ul,ol{padding-left:28px;margin-bottom:12px}
+</style>
+</head>
+<body>
+<h1 style="border-bottom:2px solid #eee;padding-bottom:12px">${title}</h1>
+${content}
+</body></html>`;
+  const blob = new Blob([html], { type: 'text/html' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = title.replace(/[^a-z0-9_\-\s]/gi, '') + '.html';
+  a.click();
+  URL.revokeObjectURL(url);
+};
+
+// ── FORMATTING ──
+window.fmt = (cmd) => { editor.focus(); document.execCommand(cmd, false, null); updateToolbarState(); };
+
+window.applyHeading = (tag) => {
+  editor.focus();
+  document.execCommand('formatBlock', false, tag === 'p' ? 'p' : tag);
+  updateToolbarState();
+};
+
+window.applyFontSize = (size) => {
+  editor.focus();
+  const sel = window.getSelection();
+  if (!sel.rangeCount || sel.isCollapsed) return;
+  document.execCommand('fontSize', false, '7');
+  editor.querySelectorAll('font[size="7"]').forEach(el => {
+    el.removeAttribute('size');
+    el.style.fontSize = size + 'px';
+  });
+};
+
+function updateToolbarState() {
+  ['bold','italic','underline'].forEach(cmd => {
+    const btn = document.getElementById('btn-' + cmd);
+    if (btn) btn.classList.toggle('active', document.queryCommandState(cmd));
+  });
+  [['justifyLeft','left'],['justifyCenter','center'],['justifyRight','right'],['justifyFull','justify']].forEach(([cmd, key]) => {
+    const btn = document.getElementById('btn-' + key);
+    if (btn) btn.classList.toggle('active', document.queryCommandState(cmd));
+  });
+  [['insertUnorderedList','ul'],['insertOrderedList','ol']].forEach(([cmd, key]) => {
+    const btn = document.getElementById('btn-' + key);
+    if (btn) btn.classList.toggle('active', document.queryCommandState(cmd));
+  });
+  const block = document.queryCommandValue('formatBlock').toLowerCase();
+  const hs = document.getElementById('heading-select');
+  hs.value = ['h1','h2','h3'].includes(block) ? block : 'p';
+}
+
+// ── STATS ──
+function updateStats() {
+  const text = editor.innerText || '';
+  const words = text.trim() ? text.trim().split(/\s+/).length : 0;
+  const chars = text.replace(/\n/g,'').length;
+  const lines = text.split('\n').filter(l => l.trim()).length || 1;
+  statWords.textContent = words + (words === 1 ? ' word' : ' words');
+  statChars.textContent = chars + (chars === 1 ? ' character' : ' characters');
+  statLines.textContent = lines + (lines === 1 ? ' line' : ' lines');
+}
+
+// ── EVENTS ──
+editor.addEventListener('input', () => { updateStats(); triggerSave(); });
+editor.addEventListener('keyup', updateToolbarState);
+editor.addEventListener('mouseup', updateToolbarState);
+
+docTitle.addEventListener('input', triggerSave);
+
+document.addEventListener('keydown', (e) => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 's') { e.preventDefault(); doSave(); }
+});
+
+</script>
+</body>
+</html>
