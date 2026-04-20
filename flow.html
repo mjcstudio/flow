@@ -847,7 +847,7 @@
       Back to Flow
     </button>
     <div id="settings-topbar-title">Settings</div>
-    <div id="settings-topbar-version">Version 1.1.0</div>
+    <div id="settings-topbar-version">v1.1.0</div>
   </div>
   <div id="settings-scroll">
     <div id="settings-content">
@@ -881,6 +881,17 @@
             <div class="settings-account-email" id="settings-acct-email"></div>
           </div>
           <button class="settings-signout-btn" onclick="signOut()">Sign out</button>
+        </div>
+      </div>
+
+      <div class="settings-section">
+        <div class="settings-section-title">About</div>
+        <div class="settings-row">
+          <div class="settings-row-info">
+            <div class="settings-row-label">Flow</div>
+            <div class="settings-row-sub" id="version-status">Version 1.1.0</div>
+          </div>
+          <button class="settings-signout-btn" style="border-color:var(--toolbar-border);color:var(--ink-light);" onclick="checkForUpdates()">Check for updates</button>
         </div>
       </div>
 
@@ -1270,8 +1281,29 @@ const THEMES = [
   { id: 'stone',    name: 'Stone',    light: '#6b5e52', dark: '#b0a090' },
 ];
 
-let currentTheme = 'ocean';
-let darkMode = false;
+const APP_VERSION = '1.1.0';
+
+// ── VERSION CHECK ──
+async function checkForUpdates() {
+  const el = document.getElementById('version-status');
+  if (!el) return;
+  el.textContent = 'Checking for updates…';
+  try {
+    const res = await fetch('https://mjcstudio.github.io/flow/flow.html', { cache: 'no-store' });
+    const text = await res.text();
+    const match = text.match(/APP_VERSION\s*=\s*'([^']+)'/);
+    if (!match) { el.textContent = 'Could not check for updates.'; return; }
+    const latest = match[1];
+    if (latest === APP_VERSION) {
+      el.innerHTML = `<span style="color:var(--green)">✓ You're on the latest version (${APP_VERSION})</span>`;
+    } else {
+      el.innerHTML = `<span style="color:var(--accent)">Update available: v${latest} → <a href="https://mjcstudio.github.io/flow/flow.html" target="_blank" style="color:var(--accent);font-weight:500">Download</a></span>`;
+    }
+  } catch {
+    el.textContent = 'Could not check for updates.';
+  }
+}
+window.checkForUpdates = checkForUpdates;
 
 function buildColourGrid() {
   const grid = document.getElementById('colour-grid');
@@ -1300,6 +1332,7 @@ function toggleDarkMode(on) {
   localStorage.setItem('flow_dark', on ? '1' : '0');
   buildColourGrid();
 }
+window.toggleDarkMode = toggleDarkMode;
 
 window.openSettings = () => {
   document.getElementById('dark-mode-toggle').checked = darkMode;
