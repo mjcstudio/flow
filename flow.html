@@ -1012,9 +1012,10 @@ function setupUserAvatar(user) {
   }
 }
 
-window.toggleUserMenu = () => {
+function toggleUserMenu() {
   document.getElementById('user-menu').classList.toggle('open');
-};
+}
+window.toggleUserMenu = toggleUserMenu;
 document.addEventListener('click', (e) => {
   const menu = document.getElementById('user-menu');
   const avatar = document.getElementById('user-avatar-placeholder');
@@ -1334,7 +1335,7 @@ function toggleDarkMode(on) {
 }
 window.toggleDarkMode = toggleDarkMode;
 
-window.openSettings = () => {
+function openSettings() {
   document.getElementById('dark-mode-toggle').checked = darkMode;
   buildColourGrid();
   if (currentUser) {
@@ -1348,11 +1349,11 @@ window.openSettings = () => {
     }
   }
   document.getElementById('settings-page').classList.add('open');
-};
+}
 
-window.closeSettings = () => {
+function closeSettings() {
   document.getElementById('settings-page').classList.remove('open');
-};
+}
 
 function loadPreferences() {
   const theme = localStorage.getItem('flow_theme') || 'ocean';
@@ -1370,21 +1371,21 @@ let searchMatches = [];
 let searchIndex = -1;
 let replaceOpen = false;
 
-window.openSearch = () => {
+function openSearch() {
   document.getElementById('search-bar').classList.add('open');
   const si = document.getElementById('search-input');
   si.focus();
   si.select();
   if (si.value) doSearch(si.value);
-};
+}
 
-window.closeSearch = () => {
+function closeSearch() {
   document.getElementById('search-bar').classList.remove('open');
   clearHighlights();
   searchMatches = [];
   searchIndex = -1;
   editor.focus();
-};
+}
 
 window.toggleReplace = () => {
   replaceOpen = !replaceOpen;
