@@ -943,7 +943,7 @@
 import { initializeApp } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js';
 import { getAuth, GoogleAuthProvider, signInWithPopup, signOut as fbSignOut, onAuthStateChanged }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-auth.js';
-import { getFirestore, collection, doc, setDoc, getDoc, getDocs, deleteDoc, query, orderBy, serverTimestamp }
+import { getFirestore, collection, doc, setDoc, getDocs, deleteDoc, query, orderBy, serverTimestamp }
   from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 const firebaseConfig = {
@@ -972,17 +972,18 @@ let saveTimer = null;
 let lastSavedContent = '';
 let lastSavedTitle = '';
 
+// ── PREFERENCES (runs immediately, no DOM needed) ──
+const APP_VERSION = '1.2.0';
+let currentTheme = localStorage.getItem('flow_theme') || 'ocean';
+let darkMode = localStorage.getItem('flow_dark') === '1';
+document.documentElement.setAttribute('data-theme', currentTheme);
+document.documentElement.setAttribute('data-dark', darkMode ? '1' : '0');
+
 // ── AUTH ──
 document.getElementById('google-signin-btn').addEventListener('click', async () => {
-  const provider = new GoogleAuthProvider();
-  try { await signInWithPopup(auth, provider); }
+  try { await signInWithPopup(auth, new GoogleAuthProvider()); }
   catch (e) { console.error(e); }
 });
-
-window.signOut = async () => {
-  await fbSignOut(auth);
-  document.getElementById('user-menu').classList.remove('open');
-};
 
 onAuthStateChanged(auth, async (user) => {
   if (user) {
@@ -1006,7 +1007,8 @@ function setupUserAvatar(user) {
   document.getElementById('user-menu-name').textContent = user.displayName || 'User';
   document.getElementById('user-menu-email').textContent = user.email || '';
   if (user.photoURL) {
-    placeholder.innerHTML = `<img id="user-avatar" src="${user.photoURL}" onclick="toggleUserMenu()" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);cursor:pointer;object-fit:cover;">`;
+    placeholder.innerHTML = `<img src="${user.photoURL}" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);cursor:pointer;object-fit:cover;">`;
+    placeholder.querySelector('img').addEventListener('click', toggleUserMenu);
   } else {
     placeholder.textContent = (user.displayName || user.email || 'U')[0].toUpperCase();
   }
@@ -1015,14 +1017,14 @@ function setupUserAvatar(user) {
 function toggleUserMenu() {
   document.getElementById('user-menu').classList.toggle('open');
 }
-window.toggleUserMenu = toggleUserMenu;
+
 document.addEventListener('click', (e) => {
   const menu = document.getElementById('user-menu');
   const avatar = document.getElementById('user-avatar-placeholder');
-  if (!menu.contains(e.target) && !avatar.contains(e.target)) menu.classList.remove('open');
+  if (menu && !menu.contains(e.target) && !avatar.contains(e.target)) menu.classList.remove('open');
 });
 
-// ── FIRESTORE HELPERS ──
+// ── FIRESTORE ──
 function docsRef() {
   return collection(db, 'users', currentUser.uid, 'documents');
 }
@@ -1030,24 +1032,18 @@ function docsRef() {
 async function saveDocToFirestore(id, title, content) {
   setSaveStatus('Saving…', 'saving');
   try {
-    await setDoc(doc(docsRef(), id), {
-      title: title || 'Untitled',
-      content,
-      updatedAt: serverTimestamp()
-    });
+    await setDoc(doc(docsRef(), id), { title: title || 'Untitled', content, updatedAt: serverTimestamp() });
     lastSavedContent = content;
     lastSavedTitle = title;
     setSaveStatus('All changes saved', 'saved');
   } catch (e) {
     setSaveStatus('Save failed', 'error');
-    console.error(e);
   }
 }
 
 async function loadMostRecentDoc() {
   try {
-    const q = query(docsRef(), orderBy('updatedAt', 'desc'));
-    const snap = await getDocs(q);
+    const snap = await getDocs(query(docsRef(), orderBy('updatedAt', 'desc')));
     if (!snap.empty) {
       const d = snap.docs[0];
       loadDocData(d.id, d.data());
@@ -1081,9 +1077,7 @@ function triggerSave() {
 async function doSave() {
   if (!currentUser) return;
   if (!currentDocId) currentDocId = genId();
-  const title = docTitle.value.trim() || 'Untitled';
-  const content = editor.innerHTML;
-  await saveDocToFirestore(currentDocId, title, content);
+  await saveDocToFirestore(currentDocId, docTitle.value.trim() || 'Untitled', editor.innerHTML);
 }
 
 function setSaveStatus(msg, state) {
@@ -1093,8 +1087,8 @@ function setSaveStatus(msg, state) {
 
 function genId() { return 'doc_' + Date.now() + '_' + Math.random().toString(36).slice(2,7); }
 
-// ── NEW DOCUMENT ──
-window.newDocument = async () => {
+// ── DOCUMENTS ──
+async function newDocument() {
   await doSave();
   currentDocId = genId();
   docTitle.value = '';
@@ -1103,24 +1097,23 @@ window.newDocument = async () => {
   lastSavedTitle = '';
   setSaveStatus('New document', '');
   editor.focus();
-};
+}
 
-// ── DOC MANAGER ──
-window.openDocManager = async () => {
+async function openDocManager() {
   document.getElementById('modal-title').textContent = 'Your documents';
   document.getElementById('modal-body').innerHTML = '<p style="color:var(--ink-faint);font-size:13px">Loading…</p>';
-  document.getElementById('modal-actions').innerHTML = `<button onclick="closeModal()">Close</button>`;
+  const acts = document.getElementById('modal-actions');
+  acts.innerHTML = '';
+  const closeBtn = document.createElement('button');
+  closeBtn.textContent = 'Close';
+  closeBtn.addEventListener('click', closeModal);
+  acts.appendChild(closeBtn);
   document.getElementById('modal-overlay').classList.add('open');
 
   try {
-    const q = query(docsRef(), orderBy('updatedAt', 'desc'));
-    const snap = await getDocs(q);
+    const snap = await getDocs(query(docsRef(), orderBy('updatedAt', 'desc')));
     const body = document.getElementById('modal-body');
-
-    if (snap.empty) {
-      body.innerHTML = '<p>No saved documents yet.</p>';
-      return;
-    }
+    if (snap.empty) { body.innerHTML = '<p>No saved documents yet.</p>'; return; }
 
     const dl = document.createElement('div');
     dl.id = 'doc-list';
@@ -1130,17 +1123,13 @@ window.openDocManager = async () => {
       item.className = 'doc-item' + (d.id === currentDocId ? ' current' : '');
       const ts = data.updatedAt?.toDate?.();
       const dateStr = ts ? ts.toLocaleDateString('en-GB', { day:'numeric', month:'short', year:'numeric' }) : '—';
-      item.innerHTML = `
-        <div>
-          <div class="doc-name">${data.title || 'Untitled'}</div>
-          <div class="doc-date">${dateStr}</div>
-        </div>
-        <button class="doc-del" data-id="${d.id}">Delete</button>`;
+      item.innerHTML = `<div><div class="doc-name">${data.title || 'Untitled'}</div><div class="doc-date">${dateStr}</div></div><button class="doc-del">Delete</button>`;
       item.querySelector('.doc-del').addEventListener('click', (e) => {
         e.stopPropagation();
         confirmDelete(d.id, data.title || 'Untitled');
       });
-      item.addEventListener('click', async () => {
+      item.addEventListener('click', async (e) => {
+        if (e.target.classList.contains('doc-del')) return;
         await doSave();
         loadDocData(d.id, data);
         closeModal();
@@ -1152,69 +1141,46 @@ window.openDocManager = async () => {
   } catch (e) {
     document.getElementById('modal-body').innerHTML = '<p>Could not load documents.</p>';
   }
-};
-
-function confirmDelete(id, title) {
-  showModal(
-    'Delete document?',
-    `"${title}" will be permanently deleted.`,
-    [
-      { label: 'Cancel', action: closeModal },
-      { label: 'Delete', cls: 'danger', action: async () => {
-        await deleteDoc(doc(docsRef(), id));
-        if (currentDocId === id) {
-          currentDocId = genId();
-          editor.innerHTML = '';
-          docTitle.value = '';
-          lastSavedContent = '';
-          setSaveStatus('New document', '');
-        }
-        closeModal();
-      }}
-    ]
-  );
 }
 
-function showModal(title, body, buttons) {
-  document.getElementById('modal-title').textContent = title;
-  document.getElementById('modal-body').innerHTML = `<p>${body}</p>`;
-  const acts = document.getElementById('modal-actions');
-  acts.innerHTML = '';
-  buttons.forEach(b => {
-    const btn = document.createElement('button');
-    btn.textContent = b.label;
-    if (b.cls) btn.className = b.cls;
-    btn.onclick = b.action;
-    acts.appendChild(btn);
-  });
-  document.getElementById('modal-overlay').classList.add('open');
-}
+function closeModal() { document.getElementById('modal-overlay').classList.remove('open'); }
 
-window.closeModal = () => document.getElementById('modal-overlay').classList.remove('open');
 document.getElementById('modal-overlay').addEventListener('click', (e) => {
   if (e.target === document.getElementById('modal-overlay')) closeModal();
 });
 
+function confirmDelete(id, title) {
+  const acts = document.getElementById('modal-actions');
+  document.getElementById('modal-title').textContent = 'Delete document?';
+  document.getElementById('modal-body').innerHTML = `<p>"${title}" will be permanently deleted.</p>`;
+  acts.innerHTML = '';
+  const cancel = document.createElement('button');
+  cancel.textContent = 'Cancel';
+  cancel.addEventListener('click', closeModal);
+  const del = document.createElement('button');
+  del.textContent = 'Delete';
+  del.className = 'danger';
+  del.addEventListener('click', async () => {
+    await deleteDoc(doc(docsRef(), id));
+    if (currentDocId === id) {
+      currentDocId = genId();
+      editor.innerHTML = '';
+      docTitle.value = '';
+      lastSavedContent = '';
+      setSaveStatus('New document', '');
+    }
+    closeModal();
+  });
+  acts.appendChild(cancel);
+  acts.appendChild(del);
+  document.getElementById('modal-overlay').classList.add('open');
+}
+
 // ── EXPORT ──
-window.exportDoc = async () => {
+async function exportDoc() {
   await doSave();
   const title = docTitle.value.trim() || 'Untitled';
-  const content = editor.innerHTML;
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8">
-<title>${title}</title>
-<style>
-body{font-family:Georgia,serif;font-size:16px;line-height:1.75;max-width:800px;margin:60px auto;padding:0 40px;color:#1a1a1a}
-h1{font-size:32px;margin:24px 0 12px}h2{font-size:24px;margin:20px 0 10px}h3{font-size:18px;margin:16px 0 8px}
-ul,ol{padding-left:28px;margin-bottom:12px}
-</style>
-</head>
-<body>
-<h1 style="border-bottom:2px solid #eee;padding-bottom:12px">${title}</h1>
-${content}
-</body></html>`;
+  const html = `<!DOCTYPE html><html lang="en"><head><meta charset="UTF-8"><title>${title}</title><style>body{font-family:Georgia,serif;font-size:16px;line-height:1.75;max-width:800px;margin:60px auto;padding:0 40px;color:#1a1a1a}h1{font-size:32px;margin:24px 0 12px}h2{font-size:24px;margin:20px 0 10px}h3{font-size:18px;margin:16px 0 8px}ul,ol{padding-left:28px;margin-bottom:12px}</style></head><body><h1 style="border-bottom:2px solid #eee;padding-bottom:12px">${title}</h1>${editor.innerHTML}</body></html>`;
   const blob = new Blob([html], { type: 'text/html' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1222,18 +1188,24 @@ ${content}
   a.download = title.replace(/[^a-z0-9_\-\s]/gi, '') + '.html';
   a.click();
   URL.revokeObjectURL(url);
-};
+}
+
+// ── SIGN OUT ──
+async function signOut() {
+  await fbSignOut(auth);
+  document.getElementById('user-menu').classList.remove('open');
+}
 
 // ── FORMATTING ──
-window.fmt = (cmd) => { editor.focus(); document.execCommand(cmd, false, null); updateToolbarState(); };
+function fmt(cmd) { editor.focus(); document.execCommand(cmd, false, null); updateToolbarState(); }
 
-window.applyHeading = (tag) => {
+function applyHeading(tag) {
   editor.focus();
   document.execCommand('formatBlock', false, tag === 'p' ? 'p' : tag);
   updateToolbarState();
-};
+}
 
-window.applyFontSize = (size) => {
+function applyFontSize(size) {
   editor.focus();
   const sel = window.getSelection();
   if (!sel.rangeCount || sel.isCollapsed) return;
@@ -1242,7 +1214,7 @@ window.applyFontSize = (size) => {
     el.removeAttribute('size');
     el.style.fontSize = size + 'px';
   });
-};
+}
 
 function updateToolbarState() {
   ['bold','italic','underline'].forEach(cmd => {
@@ -1259,52 +1231,28 @@ function updateToolbarState() {
   });
   const block = document.queryCommandValue('formatBlock').toLowerCase();
   const hs = document.getElementById('heading-select');
-  hs.value = ['h1','h2','h3'].includes(block) ? block : 'p';
+  if (hs) hs.value = ['h1','h2','h3'].includes(block) ? block : 'p';
 }
 
 // ── SETTINGS ──
 const THEMES = [
-  { id: 'ocean',    name: 'Ocean',    light: '#2c5f8a', dark: '#5b9ec9' },
-  { id: 'forest',   name: 'Forest',   light: '#2d6a4f', dark: '#52b788' },
-  { id: 'berry',    name: 'Berry',    light: '#7b3fa0', dark: '#c084e0' },
-  { id: 'rust',     name: 'Rust',     light: '#b84c1a', dark: '#e07848' },
-  { id: 'slate',    name: 'Slate',    light: '#3d5166', dark: '#7ea8c8' },
-  { id: 'rose',     name: 'Rose',     light: '#a0374a', dark: '#e07088' },
-  { id: 'teal',     name: 'Teal',     light: '#1e7b7b', dark: '#40bfbf' },
-  { id: 'gold',     name: 'Gold',     light: '#8a6914', dark: '#d4a830' },
-  { id: 'indigo',   name: 'Indigo',   light: '#3d3d9e', dark: '#8080d4' },
-  { id: 'sage',     name: 'Sage',     light: '#5a7a5a', dark: '#8ab48a' },
-  { id: 'crimson',  name: 'Crimson',  light: '#9e2a2a', dark: '#d46060' },
-  { id: 'copper',   name: 'Copper',   light: '#9e5a1a', dark: '#d49060' },
-  { id: 'plum',     name: 'Plum',     light: '#6b2d5e', dark: '#c070b0' },
-  { id: 'midnight', name: 'Midnight', light: '#1a3a5c', dark: '#5a90c8' },
-  { id: 'moss',     name: 'Moss',     light: '#4a6741', dark: '#80aa74' },
-  { id: 'stone',    name: 'Stone',    light: '#6b5e52', dark: '#b0a090' },
+  { id:'ocean',    name:'Ocean',    light:'#2c5f8a', dark:'#5b9ec9' },
+  { id:'forest',   name:'Forest',   light:'#2d6a4f', dark:'#52b788' },
+  { id:'berry',    name:'Berry',    light:'#7b3fa0', dark:'#c084e0' },
+  { id:'rust',     name:'Rust',     light:'#b84c1a', dark:'#e07848' },
+  { id:'slate',    name:'Slate',    light:'#3d5166', dark:'#7ea8c8' },
+  { id:'rose',     name:'Rose',     light:'#a0374a', dark:'#e07088' },
+  { id:'teal',     name:'Teal',     light:'#1e7b7b', dark:'#40bfbf' },
+  { id:'gold',     name:'Gold',     light:'#8a6914', dark:'#d4a830' },
+  { id:'indigo',   name:'Indigo',   light:'#3d3d9e', dark:'#8080d4' },
+  { id:'sage',     name:'Sage',     light:'#5a7a5a', dark:'#8ab48a' },
+  { id:'crimson',  name:'Crimson',  light:'#9e2a2a', dark:'#d46060' },
+  { id:'copper',   name:'Copper',   light:'#9e5a1a', dark:'#d49060' },
+  { id:'plum',     name:'Plum',     light:'#6b2d5e', dark:'#c070b0' },
+  { id:'midnight', name:'Midnight', light:'#1a3a5c', dark:'#5a90c8' },
+  { id:'moss',     name:'Moss',     light:'#4a6741', dark:'#80aa74' },
+  { id:'stone',    name:'Stone',    light:'#6b5e52', dark:'#b0a090' },
 ];
-
-const APP_VERSION = '1.1.0';
-
-// ── VERSION CHECK ──
-async function checkForUpdates() {
-  const el = document.getElementById('version-status');
-  if (!el) return;
-  el.textContent = 'Checking for updates…';
-  try {
-    const res = await fetch('https://mjcstudio.github.io/flow/flow.html', { cache: 'no-store' });
-    const text = await res.text();
-    const match = text.match(/APP_VERSION\s*=\s*'([^']+)'/);
-    if (!match) { el.textContent = 'Could not check for updates.'; return; }
-    const latest = match[1];
-    if (latest === APP_VERSION) {
-      el.innerHTML = `<span style="color:var(--green)">✓ You're on the latest version (${APP_VERSION})</span>`;
-    } else {
-      el.innerHTML = `<span style="color:var(--accent)">Update available: v${latest} → <a href="https://mjcstudio.github.io/flow/flow.html" target="_blank" style="color:var(--accent);font-weight:500">Download</a></span>`;
-    }
-  } catch {
-    el.textContent = 'Could not check for updates.';
-  }
-}
-window.checkForUpdates = checkForUpdates;
 
 function buildColourGrid() {
   const grid = document.getElementById('colour-grid');
@@ -1312,28 +1260,16 @@ function buildColourGrid() {
   THEMES.forEach(t => {
     const sw = document.createElement('div');
     sw.className = 'colour-swatch' + (t.id === currentTheme ? ' selected' : '');
-    sw.dataset.theme = t.id;
-    const colour = darkMode ? t.dark : t.light;
-    sw.innerHTML = `<div class="swatch-dot" style="background:${colour}"></div><div class="swatch-name">${t.name}</div>`;
-    sw.addEventListener('click', () => applyTheme(t.id));
+    sw.innerHTML = `<div class="swatch-dot" style="background:${darkMode ? t.dark : t.light}"></div><div class="swatch-name">${t.name}</div>`;
+    sw.addEventListener('click', () => {
+      currentTheme = t.id;
+      document.documentElement.setAttribute('data-theme', t.id);
+      localStorage.setItem('flow_theme', t.id);
+      buildColourGrid();
+    });
     grid.appendChild(sw);
   });
 }
-
-function applyTheme(themeId) {
-  currentTheme = themeId;
-  document.documentElement.setAttribute('data-theme', themeId);
-  localStorage.setItem('flow_theme', themeId);
-  buildColourGrid();
-}
-
-function toggleDarkMode(on) {
-  darkMode = on;
-  document.documentElement.setAttribute('data-dark', on ? '1' : '0');
-  localStorage.setItem('flow_dark', on ? '1' : '0');
-  buildColourGrid();
-}
-window.toggleDarkMode = toggleDarkMode;
 
 function openSettings() {
   document.getElementById('dark-mode-toggle').checked = darkMode;
@@ -1348,6 +1284,8 @@ function openSettings() {
       av.textContent = (currentUser.displayName || currentUser.email || 'U')[0].toUpperCase();
     }
   }
+  document.getElementById('settings-topbar-version').textContent = 'v' + APP_VERSION;
+  document.getElementById('version-status').textContent = 'Version ' + APP_VERSION;
   document.getElementById('settings-page').classList.add('open');
 }
 
@@ -1355,16 +1293,20 @@ function closeSettings() {
   document.getElementById('settings-page').classList.remove('open');
 }
 
-function loadPreferences() {
-  const theme = localStorage.getItem('flow_theme') || 'ocean';
-  const dark = localStorage.getItem('flow_dark') === '1';
-  currentTheme = theme;
-  darkMode = dark;
-  document.documentElement.setAttribute('data-theme', theme);
-  document.documentElement.setAttribute('data-dark', dark ? '1' : '0');
+async function checkForUpdates() {
+  const el = document.getElementById('version-status');
+  el.textContent = 'Checking…';
+  try {
+    const res = await fetch('https://mjcstudio.github.io/flow/flow.html', { cache: 'no-store' });
+    const text = await res.text();
+    const match = text.match(/APP_VERSION\s*=\s*'([^']+)'/);
+    if (!match) { el.textContent = 'Could not check.'; return; }
+    const latest = match[1];
+    el.innerHTML = latest === APP_VERSION
+      ? `<span style="color:var(--green)">✓ Up to date (v${APP_VERSION})</span>`
+      : `<span style="color:var(--accent)">Update available: v${latest} — <a href="https://mjcstudio.github.io/flow/flow.html" target="_blank" style="color:var(--accent);font-weight:500">Download</a></span>`;
+  } catch { el.textContent = 'Could not check.'; }
 }
-
-loadPreferences();
 
 // ── SEARCH & REPLACE ──
 let searchMatches = [];
@@ -1374,31 +1316,25 @@ let replaceOpen = false;
 function openSearch() {
   document.getElementById('search-bar').classList.add('open');
   const si = document.getElementById('search-input');
-  si.focus();
-  si.select();
+  si.focus(); si.select();
   if (si.value) doSearch(si.value);
 }
 
 function closeSearch() {
   document.getElementById('search-bar').classList.remove('open');
   clearHighlights();
-  searchMatches = [];
-  searchIndex = -1;
+  searchMatches = []; searchIndex = -1;
   editor.focus();
 }
 
-window.toggleReplace = () => {
+function toggleReplace() {
   replaceOpen = !replaceOpen;
-  const row = document.getElementById('replace-row');
-  const btn = document.getElementById('toggle-replace-btn');
-  row.classList.toggle('open', replaceOpen);
-  btn.textContent = replaceOpen ? '− Replace' : '+ Replace';
+  document.getElementById('replace-row').classList.toggle('open', replaceOpen);
+  document.getElementById('toggle-replace-btn').textContent = replaceOpen ? '− Replace' : '+ Replace';
   if (replaceOpen) document.getElementById('replace-input').focus();
-};
+}
 
-document.getElementById('search-input').addEventListener('input', (e) => {
-  doSearch(e.target.value);
-});
+document.getElementById('search-input').addEventListener('input', (e) => doSearch(e.target.value));
 document.getElementById('search-input').addEventListener('keydown', (e) => {
   if (e.key === 'Enter') { e.shiftKey ? searchPrev() : searchNext(); }
   if (e.key === 'Escape') closeSearch();
@@ -1409,21 +1345,15 @@ document.getElementById('replace-input').addEventListener('keydown', (e) => {
 
 function doSearch(term) {
   clearHighlights();
-  searchMatches = [];
-  searchIndex = -1;
+  searchMatches = []; searchIndex = -1;
   const countEl = document.getElementById('search-count');
   const si = document.getElementById('search-input');
-
   if (!term) { countEl.textContent = ''; si.classList.remove('no-match'); return; }
-
-  // Walk text nodes and highlight
-  const regex = new RegExp(escapeRegex(term), 'gi');
+  const regex = new RegExp(term.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'gi');
   const walker = document.createTreeWalker(editor, NodeFilter.SHOW_TEXT);
-  const nodesToProcess = [];
-  let node;
-  while ((node = walker.nextNode())) nodesToProcess.push(node);
-
-  nodesToProcess.forEach(textNode => {
+  const nodes = [];
+  let n; while ((n = walker.nextNode())) nodes.push(n);
+  nodes.forEach(textNode => {
     const text = textNode.nodeValue;
     if (!regex.test(text)) return;
     regex.lastIndex = 0;
@@ -1441,72 +1371,57 @@ function doSearch(term) {
     if (last < text.length) frag.appendChild(document.createTextNode(text.slice(last)));
     textNode.parentNode.replaceChild(frag, textNode);
   });
-
   if (searchMatches.length === 0) {
-    countEl.textContent = 'No results';
-    countEl.className = 'no-match';
-    si.classList.add('no-match');
+    countEl.textContent = 'No results'; countEl.className = 'no-match'; si.classList.add('no-match');
   } else {
-    si.classList.remove('no-match');
-    searchIndex = 0;
-    activateMatch(0);
+    si.classList.remove('no-match'); activateMatch(0);
   }
 }
 
 function activateMatch(idx) {
   searchMatches.forEach(m => m.classList.remove('current'));
-  if (searchMatches.length === 0) return;
+  if (!searchMatches.length) return;
   searchIndex = ((idx % searchMatches.length) + searchMatches.length) % searchMatches.length;
   const m = searchMatches[searchIndex];
   m.classList.add('current');
   m.scrollIntoView({ block: 'center', behavior: 'smooth' });
-  document.getElementById('search-count').textContent = `${searchIndex + 1} / ${searchMatches.length}`;
-  document.getElementById('search-count').className = '';
+  const countEl = document.getElementById('search-count');
+  countEl.textContent = `${searchIndex + 1} / ${searchMatches.length}`;
+  countEl.className = '';
 }
 
-window.searchNext = () => activateMatch(searchIndex + 1);
-window.searchPrev = () => activateMatch(searchIndex - 1);
+function searchNext() { activateMatch(searchIndex + 1); }
+function searchPrev() { activateMatch(searchIndex - 1); }
 
 function clearHighlights() {
   editor.querySelectorAll('mark.search-highlight').forEach(mark => {
-    const parent = mark.parentNode;
-    parent.replaceChild(document.createTextNode(mark.textContent), mark);
-    parent.normalize();
+    mark.parentNode.replaceChild(document.createTextNode(mark.textContent), mark);
+    mark.parentNode?.normalize();
   });
 }
 
-window.replaceOne = () => {
-  if (searchMatches.length === 0) return;
-  const replacement = document.getElementById('replace-input').value;
+function replaceOne() {
+  if (!searchMatches.length) return;
   const current = searchMatches[searchIndex];
   if (!current) return;
-  const text = document.createTextNode(replacement);
-  current.parentNode.replaceChild(text, current);
+  current.parentNode.replaceChild(document.createTextNode(document.getElementById('replace-input').value), current);
   searchMatches.splice(searchIndex, 1);
   triggerSave();
-  const term = document.getElementById('search-input').value;
-  doSearch(term);
-};
-
-window.replaceAll = () => {
-  if (searchMatches.length === 0) return;
-  const replacement = document.getElementById('replace-input').value;
-  [...searchMatches].forEach(m => {
-    m.parentNode.replaceChild(document.createTextNode(replacement), m);
-  });
-  searchMatches = [];
-  searchIndex = -1;
-  document.getElementById('search-count').textContent = 'Replaced';
-  document.getElementById('search-count').className = 'saved';
-  triggerSave();
-  setTimeout(() => doSearch(document.getElementById('search-input').value), 100);
-};
-
-function escapeRegex(str) {
-  return str.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  doSearch(document.getElementById('search-input').value);
 }
 
+function replaceAll() {
+  if (!searchMatches.length) return;
+  const replacement = document.getElementById('replace-input').value;
+  [...searchMatches].forEach(m => m.parentNode.replaceChild(document.createTextNode(replacement), m));
+  searchMatches = []; searchIndex = -1;
+  const countEl = document.getElementById('search-count');
+  countEl.textContent = 'Replaced'; countEl.className = 'saved';
+  triggerSave();
+  setTimeout(() => doSearch(document.getElementById('search-input').value), 100);
+}
 
+// ── STATS ──
 function updateStats() {
   const text = editor.innerText || '';
   const words = text.trim() ? text.trim().split(/\s+/).length : 0;
@@ -1517,13 +1432,12 @@ function updateStats() {
   statLines.textContent = lines + (lines === 1 ? ' line' : ' lines');
 }
 
-// ── EVENTS ──
+// ── ALL EVENT LISTENERS ──
 editor.addEventListener('input', () => { updateStats(); triggerSave(); });
 editor.addEventListener('keyup', updateToolbarState);
 editor.addEventListener('mouseup', updateToolbarState);
 docTitle.addEventListener('input', triggerSave);
 
-// ── BUTTON WIRING ──
 // Header
 document.getElementById('btn-docs').addEventListener('click', openDocManager);
 document.getElementById('btn-new').addEventListener('click', newDocument);
@@ -1550,19 +1464,24 @@ document.getElementById('btn-redo').addEventListener('click', () => document.exe
 // User menu
 document.getElementById('signout-btn').addEventListener('click', signOut);
 
-// Settings page
+// Settings
 document.getElementById('settings-back').addEventListener('click', closeSettings);
-document.getElementById('dark-mode-toggle').addEventListener('change', function() { toggleDarkMode(this.checked); });
+document.getElementById('dark-mode-toggle').addEventListener('change', function() {
+  darkMode = this.checked;
+  document.documentElement.setAttribute('data-dark', darkMode ? '1' : '0');
+  localStorage.setItem('flow_dark', darkMode ? '1' : '0');
+  buildColourGrid();
+});
 document.getElementById('btn-signout-settings').addEventListener('click', signOut);
 document.getElementById('btn-check-updates').addEventListener('click', checkForUpdates);
 
-// Search bar
-document.getElementById('btn-search-prev').addEventListener('click', () => searchPrev());
-document.getElementById('btn-search-next').addEventListener('click', () => searchNext());
-document.getElementById('btn-search-close').addEventListener('click', () => closeSearch());
-document.getElementById('toggle-replace-btn').addEventListener('click', () => toggleReplace());
-document.getElementById('btn-replace-one').addEventListener('click', () => replaceOne());
-document.getElementById('btn-replace-all').addEventListener('click', () => replaceAll());
+// Search
+document.getElementById('btn-search-prev').addEventListener('click', searchPrev);
+document.getElementById('btn-search-next').addEventListener('click', searchNext);
+document.getElementById('btn-search-close').addEventListener('click', closeSearch);
+document.getElementById('toggle-replace-btn').addEventListener('click', toggleReplace);
+document.getElementById('btn-replace-one').addEventListener('click', replaceOne);
+document.getElementById('btn-replace-all').addEventListener('click', replaceAll);
 
 // Keyboard shortcuts
 document.addEventListener('keydown', (e) => {
