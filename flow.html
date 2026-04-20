@@ -1004,7 +1004,7 @@ function setupUserAvatar(user) {
   document.getElementById('user-menu-email').textContent = user.email || '';
   if (user.photoURL) {
     placeholder.innerHTML = `<img src="${user.photoURL}" style="width:28px;height:28px;border-radius:50%;border:1px solid var(--rule);cursor:pointer;object-fit:cover;">`;
-    placeholder.querySelector('img').addEventListener('click', toggleUserMenu);
+    placeholder.querySelector('img').addEventListener('click', openSettings);
   } else {
     placeholder.textContent = (user.displayName || user.email || 'U')[0].toUpperCase();
   }
